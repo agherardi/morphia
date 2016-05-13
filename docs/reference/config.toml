@@ -1,4 +1,4 @@
-baseurl = "/morphia/1.1"
+baseurl = "/morphia/1.2"
 languageCode = "en-us"
 title = "Morphia"
 theme = "mongodb"

@@ -179,39 +179,40 @@ public class TestLazySingleReference extends ProxyTestBase {
 
         RootEntity root = new RootEntity();
         final ReferencedEntity reference = new ReferencedEntity();
+        final ReferencedEntity second = new ReferencedEntity();
 
         root.r = reference;
+        root.secondReference = second;
         reference.setFoo("bar");
 
         final Key<ReferencedEntity> k = getDs().save(reference);
-        final String keyAsString = k.getId().toString();
+        getDs().save(second);
+        final Object key = k.getId();
         getDs().save(root);
 
         root = getDs().get(root);
 
-        ReferencedEntity p = root.r;
+        ReferencedEntity referenced = root.r;
 
-        assertIsProxy(p);
-        assertNotFetched(p);
-        Assert.assertEquals(keyAsString, ((ProxiedEntityReference) p).__getKey().getId().toString());
+        assertIsProxy(referenced);
+        assertNotFetched(referenced);
+        Assert.assertEquals(key, ((ProxiedEntityReference) referenced).__getKey().getId());
         // still not fetched?
-        assertNotFetched(p);
-        p.getFoo();
+        assertNotFetched(referenced);
+        assertNotFetched(root.secondReference);
+        referenced.getFoo();
         // should be fetched now.
-        assertFetched(p);
-
-        root = deserialize(root);
-        p = root.r;
-        assertNotFetched(p);
-        p.getFoo();
-        // should be fetched now.
-        assertFetched(p);
+        assertFetched(referenced);
+        assertNotFetched(root.secondReference);
+        root.secondReference.getFoo();
+        assertFetched(root.secondReference);
 
         root = getDs().get(root);
-        p = root.r;
-        assertNotFetched(p);
+        assertNotFetched(root.r);
+        assertNotFetched(root.secondReference);
         getDs().save(root);
-        assertNotFetched(p);
+        assertNotFetched(root.r);
+        assertNotFetched(root.secondReference);
     }
 
     public static class RootEntity extends TestEntity {
@@ -225,6 +226,7 @@ public class TestLazySingleReference extends ProxyTestBase {
     public static class ReferencedEntity extends TestEntity {
         private String foo;
 
+        @Override
         @IdGetter
         public ObjectId getId() {
             return super.getId();
